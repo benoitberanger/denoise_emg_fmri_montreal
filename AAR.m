@@ -33,11 +33,45 @@ end
 
 %% Compute Timeshift
 
+% Construct Gaussian Kernel for smoothing
+% https://fr.mathworks.com/matlabcentral/answers/81689-how-to-implement-convolution-instead-of-the-built-in-imfilter
+m=upscale_factor*2; 
+n=upscale_factor*2;
+sigma=upscale_factor;
+[h1,h2]=meshgrid(-(m-1)/2:(m-1)/2, -(n-1)/2:(n-1)/2);
+hg= exp(-(h1.^2+h2.^2)/(2*sigma^2));            %Gaussian function
+h=hg ./sum(hg(:));
+
+% Smooth
+carpet_smoothed = conv2( carpet_raw, h );
+
 % Fetch minimum of the average window
-[~,I]= max(abs(mean(carpet_raw,1)));
+
+% Select a sub part of the smoothed carpet
+lim_1 = WindowLength/2; % middle of the carpet
+lim_2 = lim_1 + WindowLength/20; % some points after...
+local_carpet_smoothed = carpet_smoothed(:, lim_1:lim_2 ); % look into a smaller carpet, to avoid the edges 
+
+% Compute the mean, and fetch the minimum : this will be our reference point for the timeshift
+mean_local_carpet_smoothed = mean(local_carpet_smoothed,1);
+[~,I]= min(mean_local_carpet_smoothed); % Where should I compute the timeshift ?
+I = I + lim_1; % real index of the minimum from the whole carpet
+
+% if verbose > 0
+%     figure('Name','local Carpet smoothed, used to fetch where the timeshift will be computed')
+%     ax(1) = subplot(4,1,1:3);
+%     image(local_carpet_smoothed,'CDataMapping','scaled')
+%     colormap(gray(256))
+%     colorbar
+%     ax(2) = subplot(4,1,4);
+%     image(mean_local_carpet_smoothed,'CDataMapping','scaled')
+%     colormap(gray(256))
+%     colorbar
+%     linkaxes(ax,'x')
+% end
 
 % Reduce our carpet around this supposed local minimum
-local_carpet = carpet_raw(:,I-10*upscale_factor/2:I+10*upscale_factor)/2;
+local_carpet = carpet_smoothed(:,I-10*upscale_factor/2:I+10*upscale_factor)/2;
 if verbose > 0
     figure('Name','Carpet around the minimum, where timeshift is computed')
     subplot(2,1,1)
