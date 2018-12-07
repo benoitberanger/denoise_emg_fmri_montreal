@@ -1,0 +1,13 @@
+# MATLAB / Octave
+*.asv
+*.m~
+*.mat
+*.fig
+
+# other
+*.txt
+*.png
+
+# OSX
+._*
+.DS_Store*
